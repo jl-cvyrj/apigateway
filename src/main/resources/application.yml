@@ -1,0 +1,31 @@
+server:
+  port: 8068
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info"
+
+spring:
+  application:
+    name: apigateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      routes:
+        - id: userservice
+          uri: ${USER_SERVICE_URI:http://localhost:8080}
+          predicates:
+            - Path=/users/**
+        - id: authenticationservice
+          uri: ${AUTHENTICATION_SERVICE_URI:http://localhost:8082}
+          predicates:
+            - Path=/auth/**
+        - id: orderservice
+          uri: ${ORDER_SERVICE_URI:http://localhost:8084}
+          predicates:
+            - Path=/orders/**
