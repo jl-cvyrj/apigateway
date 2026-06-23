@@ -11,12 +11,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @Component
 public class JwtAuthenticationFilter implements GlobalFilter {
@@ -26,11 +29,6 @@ public class JwtAuthenticationFilter implements GlobalFilter {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        String path = exchange.getRequest().getPath().toString();
-
-        if (path.endsWith("auth/login") || path.endsWith("auth/register")) {
-            return chain.filter(exchange);
-        }
 
         if(!exchange.getRequest().getHeaders().containsKey("Authorization")) {
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
@@ -46,11 +44,13 @@ public class JwtAuthenticationFilter implements GlobalFilter {
 
         try {
             validateAccessToken(token);
+            Claims claims = extractAllClaims(token);
+            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(claims.getSubject(), null, List.of());
+            return chain.filter(exchange).contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth));
         } catch (InvalidTokenException e) {
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
         }
-        return chain.filter(exchange);
     }
 
     private SecretKey getSigningKey() {
@@ -58,7 +58,7 @@ public class JwtAuthenticationFilter implements GlobalFilter {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public void validateAccessToken(String token) throws InvalidTokenException {
+    private void validateAccessToken(String token) throws InvalidTokenException {
         try {
             Claims claims = extractAllClaims(token);
             String tokenType = claims.get("type", String.class);

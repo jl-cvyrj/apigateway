@@ -4,7 +4,7 @@ services:
   postgres:
     image: postgres:15
     environment:
-      POSTGRES_DB: ${DB_USERNAME}
+      POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "5433:5432"
@@ -20,19 +20,23 @@ services:
       - "8068:8068"
     environment:
       USER_SERVICE_URI: http://user-service:8080
-      AUTHENTIFICATION_SERVICE_URI: http://auth-service:8082
+      AUTHENTICATION_SERVICE_URI: http://auth-service:8082
       ORDER_SERVICE_URI: http://order-service:8084
     depends_on:
       - postgres
       - redis
 
   auth-service:
-    build: ../authentificationservice
+    build: ../authenticationservice
     ports:
       - "8082:8082"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/auth_db
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       REDIS_HOST: redis
+    depends_on:
+      - postgres
 
   user-service:
     build: ../userservice
@@ -40,6 +44,10 @@ services:
       - "8080:8080"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/userservice_db
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      - postgres
 
   order-service:
     build: ../orderservice
@@ -47,3 +55,7 @@ services:
       - "8084:8084"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/order_db
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      - postgres

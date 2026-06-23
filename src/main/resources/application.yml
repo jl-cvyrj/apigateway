@@ -6,12 +6,11 @@ management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: "health,info"
 
 spring:
   application:
-    name:
-      apigateway
+    name: apigateway
   cloud:
     gateway:
       discovery:
@@ -22,8 +21,8 @@ spring:
           uri: ${USER_SERVICE_URI:http://localhost:8080}
           predicates:
             - Path=/users/**
-        - id: authentificationservice
-          uri: ${AUTHENTIFICATION_SERVICE_URI:http://localhost:8082}
+        - id: authenticationservice
+          uri: ${AUTHENTICATION_SERVICE_URI:http://localhost:8082}
           predicates:
             - Path=/auth/**
         - id: orderservice
